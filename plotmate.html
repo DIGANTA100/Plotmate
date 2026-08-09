@@ -286,15 +286,6 @@
 
         <!-- IMAGE TAB -->
         <div class="tabpanel" id="tab-image">
-        <div class="hint" style="background:var(--accent-soft);color:var(--accent-dark);padding:8px 10px;border-radius:7px;">If you're using this inside Claude's chat preview, image extraction needs a real browser tab: download this file first, then open it directly (double-click, or drag into Chrome/Edge/Firefox) before uploading a photo.</div>
-          <label class="field-label">Gemini API key</label>
-          <input type="password" id="geminiKey" placeholder="Paste your Gemini API key">
-          <div class="hint">Used only in your browser to call Google's Gemini API directly — never sent anywhere else, and not saved after you close this tab. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
-
-          <label class="field-label">Model</label>
-          <input type="text" id="geminiModel" value="gemini-2.5-flash">
-          <div class="hint">Vision-capable Gemini model name. Change this if Google renames or retires the default.</div>
-
           <label class="field-label">Photo of your table</label>
           <div class="dropzone" id="dropzone">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
@@ -406,6 +397,17 @@
 <script>
 (function(){
   "use strict";
+
+  /* ---------------------------------------------------------
+     GEMINI CONFIG — paste your own API key below.
+     Get a free key at https://aistudio.google.com/apikey
+     Keep this file private once you add a real key, since
+     anyone who opens it can read the key in this source.
+  --------------------------------------------------------- */
+  const GEMINI_CONFIG = {
+    apiKey: "PASTE_YOUR_GEMINI_API_KEY_HERE",
+    model: "gemini-2.5-flash"
+  };
 
   /* ---------------------------------------------------------
      STATE
@@ -556,9 +558,12 @@
   }
 
   extractBtn.addEventListener('click', async ()=>{
-    const key = document.getElementById('geminiKey').value.trim();
-    const model = document.getElementById('geminiModel').value.trim() || 'gemini-2.5-flash';
-    if(!key){ setExtractStatus('error', 'Add your Gemini API key first.'); return; }
+    const key = GEMINI_CONFIG.apiKey.trim();
+    const model = GEMINI_CONFIG.model.trim() || 'gemini-2.5-flash';
+    if(!key || key === 'PASTE_YOUR_GEMINI_API_KEY_HERE'){
+      setExtractStatus('error', 'No Gemini API key set. Open this file\'s code, find GEMINI_CONFIG near the top of the &lt;script&gt; section, and paste your key into apiKey.');
+      return;
+    }
     if(!uploadedImageBase64){ setExtractStatus('error', 'Upload an image first.'); return; }
 
     extractBtn.disabled = true;
@@ -567,13 +572,14 @@
     const prompt = `You are extracting numerical data from a scientific or tabular image (a lab table, textbook table, or handwritten data table).
 
 Rules:
-- Detect the data table and ignore surrounding text, borders, or notes.
+- Detect the data table and ignore surrounding text, borders, or notes, except for a caption or heading that names the table/graph — capture that separately as the title.
 - Preserve decimal values, negative values, and scientific notation exactly.
 - The first column is X, the second is Y (unless column headers make the intended axes obvious — pick the independent variable as X).
 - If column headers/units exist, use them as xLabel and yLabel (include units in parentheses, e.g. "Vbe (V)").
+- If the image has a title, caption, or heading describing what the data/graph represents, capture it as title. If there isn't one, use null.
 - Fix obvious OCR-style confusions using context (e.g. a stray letter among digits should become the digit it resembles).
 - Return ONLY valid JSON, no markdown, no commentary, matching exactly this shape:
-{"xLabel": "string or null", "yLabel": "string or null", "points": [{"x": number, "y": number}]}`;
+{"title": "string or null", "xLabel": "string or null", "yLabel": "string or null", "points": [{"x": number, "y": number}]}`;
 
     const body = {
       contents: [{
@@ -613,6 +619,7 @@ Rules:
       fillTable(validPts);
       if(parsed.xLabel) document.getElementById('xLabel').value = parsed.xLabel;
       if(parsed.yLabel) document.getElementById('yLabel').value = parsed.yLabel;
+      if(parsed.title) document.getElementById('graphTitle').value = parsed.title;
 
       const skipped = rawPts.length - validPts.length;
       setExtractStatus('success', `Pulled ${validPts.length} point${validPts.length===1?'':'s'} from the image` + (skipped ? ` (${skipped} row${skipped===1?'':'s'} skipped — check the table).` : '.') + ' Double-check the values before plotting.');
@@ -1212,6 +1219,5 @@ Rules:
 
 })();
 </script>
-
 </body>
 </html>
