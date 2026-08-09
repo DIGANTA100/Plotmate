@@ -267,6 +267,10 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               Add row
             </button>
+            <button class="btn btn-sm" id="swapXYBtn" title="Swap the X and Y columns (and their axis labels)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14M7 17l-4-4M7 17l4-4M17 21V7M17 7l-4 4M17 7l4 4"/></svg>
+              Swap X ↔ Y
+            </button>
             <button class="btn btn-sm" id="clearRowsBtn">Clear all</button>
           </div>
         </div>
@@ -450,6 +454,20 @@
 
   document.getElementById('addRowBtn').addEventListener('click', ()=>addRow());
   document.getElementById('clearRowsBtn').addEventListener('click', ()=>{ tbody.innerHTML=''; updateRowCount(); });
+  document.getElementById('swapXYBtn').addEventListener('click', ()=>{
+    tbody.querySelectorAll('tr').forEach(r=>{
+      const xInput = r.querySelector('.cell-x');
+      const yInput = r.querySelector('.cell-y');
+      const tmp = xInput.value;
+      xInput.value = yInput.value;
+      yInput.value = tmp;
+    });
+    const xLabelEl = document.getElementById('xLabel');
+    const yLabelEl = document.getElementById('yLabel');
+    const tmpLabel = xLabelEl.value;
+    xLabelEl.value = yLabelEl.value;
+    yLabelEl.value = tmpLabel;
+  });
 
   for(let i=0;i<5;i++) addRow();
 
