@@ -1,0 +1,7 @@
+# Secrets — never push these
+.env
+config.js
+
+# OS / editor junk
+.DS_Store
+Thumbs.db

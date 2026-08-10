@@ -398,18 +398,19 @@
   </div>
 </div>
 
+<!-- config.js defines window.GEMINI_CONFIG (apiKey, model). It is gitignored —
+     copy config.example.js to config.js and put your real key there. -->
+<script src="config.js"></script>
 <script>
 (function(){
   "use strict";
 
   /* ---------------------------------------------------------
-     GEMINI CONFIG — paste your own API key below.
-     Get a free key at https://aistudio.google.com/apikey
-     Keep this file private once you add a real key, since
-     anyone who opens it can read the key in this source.
+     GEMINI CONFIG — comes from config.js (see that file / .env).
+     Nothing here is committed to git; config.js is gitignored.
   --------------------------------------------------------- */
-  const GEMINI_CONFIG = {
-    apiKey: "PASTE_YOUR_GEMINI_API_KEY_HERE",
+  const GEMINI_CONFIG = window.GEMINI_CONFIG || {
+    apiKey: "",
     model: "gemini-2.5-flash"
   };
 
@@ -576,10 +577,10 @@
   }
 
   extractBtn.addEventListener('click', async ()=>{
-    const key = GEMINI_CONFIG.apiKey.trim();
-    const model = GEMINI_CONFIG.model.trim() || 'gemini-2.5-flash';
+    const key = (GEMINI_CONFIG.apiKey || '').trim();
+    const model = (GEMINI_CONFIG.model || '').trim() || 'gemini-2.5-flash';
     if(!key || key === 'PASTE_YOUR_GEMINI_API_KEY_HERE'){
-      setExtractStatus('error', 'No Gemini API key set. Open this file\'s code, find GEMINI_CONFIG near the top of the &lt;script&gt; section, and paste your key into apiKey.');
+      setExtractStatus('error', 'No Gemini API key set. Copy config.example.js to config.js (same folder as this file) and paste your key into apiKey there.');
       return;
     }
     if(!uploadedImageBase64){ setExtractStatus('error', 'Upload an image first.'); return; }
@@ -865,6 +866,33 @@ Rules:
 
     const tickProgress = easeOutBack(Math.min(1, progress*1.15));
     const fadeProgress = easeOutCubic(progress);
+
+    // minor grid (extra light squares between major ticks, drawn first/behind)
+    const minorPerMajor = 4;
+    ctx.lineWidth = Math.max(0.75, 0.75*scale);
+    ctx.strokeStyle = 'rgba(216,221,211,0.55)';
+    ctx.globalAlpha = fadeProgress;
+    for(let i=0;i<yAxis.ticks.length-1;i++){
+      for(let m=1;m<minorPerMajor;m++){
+        const v = yAxis.ticks[i] + (yAxis.ticks[i+1]-yAxis.ticks[i])*(m/minorPerMajor);
+        const y = sy(v);
+        ctx.beginPath();
+        ctx.moveTo(plotX, y);
+        ctx.lineTo(plotX + plotW, y);
+        ctx.stroke();
+      }
+    }
+    for(let i=0;i<xAxis.ticks.length-1;i++){
+      for(let m=1;m<minorPerMajor;m++){
+        const v = xAxis.ticks[i] + (xAxis.ticks[i+1]-xAxis.ticks[i])*(m/minorPerMajor);
+        const x = sx(v);
+        ctx.beginPath();
+        ctx.moveTo(x, plotY);
+        ctx.lineTo(x, plotY + plotH);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
 
     // gridlines + ticks (animated growth from axis)
     const COLORS_TICK = '#33424B';
@@ -1171,6 +1199,24 @@ Rules:
     let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="IBM Plex Mono, monospace">`;
     s += `<rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
     if(title) s += `<text x="${W/2}" y="40" font-size="24" font-family="Space Grotesk, sans-serif" font-weight="600" text-anchor="middle" fill="#1E2A32">${escapeXml(title)}</text>`;
+
+    // minor grid (behind everything else)
+    const minorPerMajor = 4;
+    for(let i=0;i<yAxis.ticks.length-1;i++){
+      for(let m=1;m<minorPerMajor;m++){
+        const v = yAxis.ticks[i] + (yAxis.ticks[i+1]-yAxis.ticks[i])*(m/minorPerMajor);
+        const y = sy(v);
+        s += `<line x1="${plotX}" y1="${y}" x2="${plotX+plotW}" y2="${y}" stroke="#D8DDD3" stroke-width="0.75" opacity="0.55"/>`;
+      }
+    }
+    for(let i=0;i<xAxis.ticks.length-1;i++){
+      for(let m=1;m<minorPerMajor;m++){
+        const v = xAxis.ticks[i] + (xAxis.ticks[i+1]-xAxis.ticks[i])*(m/minorPerMajor);
+        const x = sx(v);
+        s += `<line x1="${x}" y1="${plotY}" x2="${x}" y2="${plotY+plotH}" stroke="#D8DDD3" stroke-width="0.75" opacity="0.55"/>`;
+      }
+    }
+
     yAxis.ticks.forEach(t=>{
       const y=sy(t);
       s += `<line x1="${plotX}" y1="${y}" x2="${plotX+plotW}" y2="${y}" stroke="#E4E7DF" stroke-width="1"/>`;
