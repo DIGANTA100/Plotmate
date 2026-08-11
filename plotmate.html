@@ -828,7 +828,6 @@ Rules:
     ctx.fillRect(0,0,W,H);
 
     const scale = W/1600;
-    const padTitle = title ? 56*scale : 20*scale;
     const fontTitle = Math.round(26*scale);
     const fontAxisLabel = Math.round(19*scale);
     const fontTick = Math.round(15*scale);
@@ -844,9 +843,12 @@ Rules:
     let maxYLabelW = 0;
     yAxis.ticks.forEach(t=>{ maxYLabelW = Math.max(maxYLabelW, ctx.measureText(fmtNum(t,yDec)).width); });
 
+    // extra headroom so point-coordinate labels never collide with the title
+    // or get clipped by the top/right edge of the canvas
+    const labelHeadroom = showLabels ? Math.round(34*scale) : 0;
     const marginLeft = maxYLabelW + fontAxisLabel*2.4 + 22*scale;
-    const marginRight = 30*scale;
-    const marginTop = padTitle;
+    const marginRight = Math.round(34*scale) + (showLabels ? Math.round(46*scale) : 0);
+    const marginTop = (title ? Math.round(62*scale) : Math.round(26*scale)) + labelHeadroom;
     const marginBottom = fontAxisLabel*2.6 + 30*scale;
 
     const plotX = marginLeft, plotY = marginTop;
@@ -1192,7 +1194,8 @@ Rules:
     const xAxis = niceAxis(Math.min(...xVals), Math.max(...xVals), 7);
     const yAxis = niceAxis(Math.min(...yVals), Math.max(...yVals), 7);
     const xDec = decimalsFor(xAxis.spacing), yDec = decimalsFor(yAxis.spacing);
-    const marginLeft = 90, marginRight = 30, marginTop = title?70:30, marginBottom = 70;
+    const labelHeadroomSvg = showLabels ? 34 : 0;
+    const marginLeft = 90, marginRight = 30 + (showLabels ? 46 : 0), marginTop = (title?70:34) + labelHeadroomSvg, marginBottom = 70;
     const plotX=marginLeft, plotY=marginTop, plotW=W-marginLeft-marginRight, plotH=H-marginTop-marginBottom;
     const sx = v => plotX + ((v-xAxis.min)/(xAxis.max-xAxis.min))*plotW;
     const sy = v => plotY + plotH - ((v-yAxis.min)/(yAxis.max-yAxis.min))*plotH;
